@@ -1,4 +1,4 @@
 LD24
 ====
 
-Ludum Dare 24
+My Ludum Dare 24 entry.

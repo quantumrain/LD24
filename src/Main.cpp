@@ -83,14 +83,13 @@ LRESULT CALLBACK MainWndProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 		case WM_SYSKEYDOWN:
 			if ((GetAsyncKeyState(VK_MENU) & 0x8000) && (GetAsyncKeyState(VK_F4) & 0x8000))
 			{
-				ShowWindow(hwnd, SW_HIDE);
 				PostQuitMessage(0);
 			}
 		return 0;
 
 		case WM_CLOSE:
 			PostQuitMessage(0);
-		break;
+		return 0;
 	}
 
 	return DefWindowProc(hwnd, msg, wparam, lparam);
@@ -230,19 +229,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	// Audio
 
-	/*IXAudio2* xAudio = 0;
-
-	if (FAILED(XAudio2Create(&xAudio, 0, XAUDIO2_DEFAULT_PROCESSOR)))
-	{
-		Panic("XAudioCreate failed");
-	}
-
-	IXAudio2MasteringVoice* masterVoice = 0;
-
-	if (FAILED(xAudio->CreateMasteringVoice(&masterVoice)))
-	{
-		Panic("CreateMasterVoice failed");
-	}*/
+	SoundInit();
 
 	// Keys
 
@@ -312,7 +299,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	
 	gDevice->ClearState();
 
-	//xAudio->Release();
+	SoundShutdown();
+
+	sc->SetFullscreenState(FALSE, 0);
 
 	il->Release();
 	vertexShader->Release();

@@ -6,6 +6,19 @@ void GameUpdate()
 	static Vector2 pos;
 	static Vector2 vel;
 	static float t;
+	static bool beep;
+
+	if (gKeyFire)
+	{
+		if (!beep)
+		{
+			SoundPlay(kSid_Select, 1.0f, 1.0f);
+		}
+
+		beep = true;
+	}
+	else
+		beep = false;
 
 	t += 0.05f;
 

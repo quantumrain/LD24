@@ -15,3 +15,22 @@
 *.sdf
 *.opensdf
 *.ipch
+*.tlog
+*.manifest
+*.res
+*.obj
+*.pch
+*.rc
+*.log
+*.lastbuildstate
+*.exe
+*.ilk
+*.pdb
+*.idb
+*.cache
+*.idb
+*.suo
+
+# Code stuff
+ShaderPsh.h
+ShaderVSh.h

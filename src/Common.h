@@ -41,4 +41,15 @@ void DebugLn(const char* txt, ...);
 void ClearColour(Colour clearColour);
 void DrawLine(Vector2 start, Vector2 end, Colour colour);
 
+enum SoundId
+{
+	kSid_Select,
+	kSid_Back,
+	kSid_Max
+};
+
+void SoundInit();
+void SoundShutdown();
+void SoundPlay(SoundId sid, float freq, float volume);
+
 #endif // COMMON_H

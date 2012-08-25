@@ -1,6 +1,9 @@
 #ifndef COMMON_H
 #define COMMON_H
 
+template<typename T> T Max(T a, T b) { return (b < a) ? a : b; }
+template<typename T> T Min(T a, T b) { return (a < b) ? a : b; }
+
 struct Vector2
 {
 	float x, y;
@@ -37,9 +40,50 @@ extern bool gKeyLeft;
 extern bool gKeyRight;
 extern bool gKeyFire;
 
+// Main
+
 void DebugLn(const char* txt, ...);
-void ClearColour(Colour clearColour);
-void DrawLine(Vector2 start, Vector2 end, Colour colour);
+void Panic(const char* msg);
+
+// Gpu
+
+namespace gpu
+{
+
+	struct VertexBuffer;
+	struct ShaderDecl;
+	struct Texture2d;
+
+	VertexBuffer* CreateVertexBuffer(int elementSize, int elementCount);
+	void DestroyVertexBuffer(VertexBuffer* vb);
+	void* Map(VertexBuffer* vb);
+	void Unmap(VertexBuffer* vb);
+
+	ShaderDecl* CreateShaderDecl(void* vertexShader, int vertexShaderLength, void* pixelShader, int pixelShaderLength);
+	void DestroyShaderDecl(ShaderDecl* decl);
+
+	Texture2d* LoadTexture2d(const char* path);
+	void DestroyTexture2d(Texture2d* tex);
+	void SetTexture(Texture2d* tex);
+
+	void Init(ID3D10RenderTargetView* rtv, ID3D10BlendState* blendState);
+	void Clear(const Colour& colour);
+	void Draw(ShaderDecl* decl, VertexBuffer* vb, int count);
+
+}
+
+// Render
+
+struct Vertex
+{
+	Vector2 pos;
+	Vector2 uv;
+	Colour colour;
+};
+
+void DrawRect(Vector2 p0, Vector2 p1, int sprite, Colour colour);
+
+// Sound
 
 enum SoundId
 {

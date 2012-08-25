@@ -30,6 +30,7 @@
 *.cache
 *.idb
 *.suo
+obj
 
 # Code stuff
 ShaderPsh.h

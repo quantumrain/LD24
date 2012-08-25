@@ -9,6 +9,8 @@
     <ClCompile Include="src\Main.cpp" />
     <ClCompile Include="src\Pch.cpp" />
     <ClCompile Include="src\Sound.cpp" />
+    <ClCompile Include="src\Render.cpp" />
+    <ClCompile Include="src\Gpu.cpp" />
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="src\ShaderPsh.hlsl" />

@@ -1,10 +1,8 @@
 #include "Pch.h"
 #include "Common.h"
-#include "ShaderPsh.h"
-#include "ShaderVsh.h"
 
-const int kWinWidth		= 160;
-const int kWinHeight	= 90;
+int kWinWidth	= 160;
+int kWinHeight	= 90;
 
 bool gHasFocus;
 bool gKeyUp;
@@ -35,43 +33,6 @@ void Panic(const char* msg)
 	ExitProcess(0);
 }
 
-Colour gClearColour(0.1f, 0.1f, 0.1f, 1.0f);
-
-void ClearColour(const Colour& clearColour)
-{
-	gClearColour = clearColour;
-}
-
-struct Vertex
-{
-	Vector2 pos;
-	Colour colour;
-};
-
-const int kMaxLineVerts = 10 * 1024;
-Vertex gLineVerts[kMaxLineVerts];
-int gLineVertCount;
-
-void DrawLine(Vector2 start, Vector2 end, Colour colour)
-{
-	if ((gLineVertCount + 2) > kMaxLineVerts)
-	{
-		DebugLn("DrawLine overflow");
-		return;
-	}
-
-	Vertex* v = &gLineVerts[gLineVertCount];
-
-	gLineVertCount += 2;
-
-	Vector2 scale(2.0f / (float)kWinWidth, -2.0f / (float)kWinHeight);
-
-	v[0].pos = start * scale;
-	v[0].colour = colour;
-	v[1].pos = end * scale;
-	v[1].colour = colour;
-}
-
 LRESULT CALLBACK MainWndProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 {
 	switch(msg)
@@ -96,7 +57,6 @@ LRESULT CALLBACK MainWndProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 }
 
 ID3D10Device* gDevice;
-ID3D10Buffer* gVb;
 
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 {
@@ -112,7 +72,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	DWORD	style	= WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU;
 	DWORD	styleEx = WS_EX_WINDOWEDGE;
-	RECT	rcWin	= { 0, 0, kWinWidth * 8, kWinHeight * 8 };
+	RECT	rcWin	= { 0, 0, kWinWidth * 6, kWinHeight * 6 };
 
 	AdjustWindowRectEx(&rcWin, style, FALSE, styleEx);
 	OffsetRect(&rcWin, 100, 100);
@@ -178,54 +138,25 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
     vp.TopLeftY = 0;
     gDevice->RSSetViewports(1, &vp);
 
-	D3D10_BUFFER_DESC vb_bd = { };
-	vb_bd.ByteWidth				= sizeof(Vertex) * kMaxLineVerts;
-	vb_bd.Usage					= D3D10_USAGE_DYNAMIC;
-	vb_bd.BindFlags				= D3D10_BIND_VERTEX_BUFFER;
-	vb_bd.CPUAccessFlags		= D3D10_CPU_ACCESS_WRITE;
-	vb_bd.MiscFlags				= 0;
+	D3D10_BLEND_DESC bd = { 0 };
 
-	if (FAILED(gDevice->CreateBuffer(&vb_bd, 0, &gVb)))
+	bd.AlphaToCoverageEnable = FALSE;
+	bd.BlendEnable[0] = TRUE;
+	bd.SrcBlend = D3D10_BLEND_SRC_ALPHA;
+	bd.DestBlend = D3D10_BLEND_INV_SRC_ALPHA;
+	bd.BlendOp = D3D10_BLEND_OP_ADD;
+	bd.SrcBlendAlpha = D3D10_BLEND_ONE;
+	bd.DestBlendAlpha = D3D10_BLEND_ONE;
+	bd.BlendOpAlpha = D3D10_BLEND_OP_ADD;
+	bd.RenderTargetWriteMask[0] = D3D10_COLOR_WRITE_ENABLE_ALL;
+
+	ID3D10BlendState* blendState = 0;
+	if (FAILED(gDevice->CreateBlendState(&bd, &blendState)))
 	{
-		Panic("CreateBuffer VB failed");
+		Panic("CreateBlendState failed");
 	}
 
-	ID3D10VertexShader* vertexShader = 0;
-	ID3D10PixelShader* pixelShader = 0;
-
-	if (FAILED(gDevice->CreateVertexShader(gShaderVsh, sizeof(gShaderVsh), &vertexShader)))
-	{
-		Panic("CreateVertexShader failed");
-	}
-
-	if (FAILED(gDevice->CreatePixelShader(gShaderPsh, sizeof(gShaderPsh), &pixelShader)))
-	{
-		Panic("CreatePixelShader failed");
-	}
-
-	D3D10_INPUT_ELEMENT_DESC ild[2];
-
-	ild[0].SemanticName			= "POSITION";
-	ild[0].SemanticIndex		= 0;
-	ild[0].Format				= DXGI_FORMAT_R32G32_FLOAT;
-	ild[0].InputSlot			= 0;
-	ild[0].AlignedByteOffset	= (intptr_t)&((Vertex*)0)->pos;
-	ild[0].InputSlotClass		= D3D10_INPUT_PER_VERTEX_DATA;
-	ild[0].InstanceDataStepRate	= 0;
-
-	ild[1].SemanticName			= "COLOR";
-	ild[1].SemanticIndex		= 0;
-	ild[1].Format				= DXGI_FORMAT_R32G32B32A32_FLOAT;
-	ild[1].InputSlot			= 0;
-	ild[1].AlignedByteOffset	= (intptr_t)&((Vertex*)0)->colour;
-	ild[1].InputSlotClass		= D3D10_INPUT_PER_VERTEX_DATA;
-	ild[1].InstanceDataStepRate	= 0;
-
-	ID3D10InputLayout* il = 0;
-	if (FAILED(gDevice->CreateInputLayout(ild, 2, gShaderVsh, sizeof(gShaderVsh), &il)))
-	{
-		Panic("CreateInputLayout failed");
-	}
+	gpu::Init(rtv, blendState);
 
 	// Audio
 
@@ -240,6 +171,12 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	int locKeyZ = MapVirtualKey(0x2C, MAPVK_VSC_TO_VK);
 
 	// Main
+
+	void RenderInit();
+	RenderInit();
+
+	void GameInit();
+	GameInit();
 
 	for(;;)
 	{
@@ -256,7 +193,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		{
 			if (sc)
 			{
-				gLineVertCount = 0;
+				void RenderPreUpdate();
+				RenderPreUpdate();
 
 				gKeyUp		= gHasFocus && (((GetAsyncKeyState(VK_UP) & 0x8000) != 0) || ((GetAsyncKeyState(locKeyW) & 0x8000) != 0));
 				gKeyDown	= gHasFocus && (((GetAsyncKeyState(VK_DOWN) & 0x8000) != 0) || ((GetAsyncKeyState(locKeyS) & 0x8000) != 0));
@@ -267,28 +205,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 				void GameUpdate();
 				GameUpdate();
 
-				void* mappedData = 0;
-
-				if (SUCCEEDED(gVb->Map(D3D10_MAP_WRITE_DISCARD, 0, &mappedData)))
-				{
-					memcpy(mappedData, gLineVerts, gLineVertCount * sizeof(Vertex));
-
-					gVb->Unmap();
-				}
-
-				gDevice->ClearRenderTargetView(rtv, (float*)&gClearColour);
-
-				UINT stride = sizeof(Vertex);
-				UINT offset = 0;
-
-				gDevice->IASetInputLayout(il);
-				gDevice->IASetVertexBuffers(0, 1, &gVb, &stride, &offset);
-				gDevice->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_LINELIST);
-
-				gDevice->VSSetShader(vertexShader);
-				gDevice->PSSetShader(pixelShader);
-
-				gDevice->Draw(gLineVertCount, 0);
+				void RenderGame();
+				RenderGame();
 
 				sc->Present(1, 0);
 			}
@@ -298,15 +216,13 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	}
 	
 	gDevice->ClearState();
+	sc->SetFullscreenState(FALSE, 0);
 
 	SoundShutdown();
 
-	sc->SetFullscreenState(FALSE, 0);
+	void RenderShutdown();
+	RenderShutdown();
 
-	il->Release();
-	vertexShader->Release();
-	pixelShader->Release();
-	gVb->Release();
 	rtv->Release();
 	sc->Release();
 	gDevice->Release();

@@ -104,9 +104,11 @@ enum { kFlipX = 1, kFlipY = 2 };
 void DrawRect(Vector2 p0, Vector2 p1, int sprite, int flags, Colour colour);
 void DrawSprite(Vector2 pos, Vector2 scale, int sprite, int flags, Colour colour);
 
+enum { kTextLeft = 1, kTextCentre = 2, kTextRight = 3 };
+
 void DrawCharRect(Vector2 p0, Vector2 p1, int sprite, int flags, Colour colour);
 void DrawChar(Vector2 pos, Vector2 scale, int sprite, int flags, Colour colour);
-void DrawString(Vector2 pos, Colour colour, const char* txt, ...);
+void DrawString(Vector2 pos, int flags, Colour colour, const char* txt, ...);
 
 // Sound
 

@@ -162,7 +162,35 @@ void DrawChar(Vector2 pos, Vector2 scale, int sprite, int flags, Colour colour)
 	DrawCharRect(pos, pos + scale * Vector2(8.0f), sprite, flags, colour);
 }
 
-void DrawString(Vector2 pos, Colour colour, const char* txt, ...)
+float MeasureChar(int c)
+{
+	switch(c)
+	{
+		case 'I': return 4.0f;
+		case 'W': return 9.0f;
+		case 'M': return 9.0f;
+		case ':': return 4.0f;
+		case '.': return 4.0f;
+		case '/': return 6.0f;
+		case ' ': return 4.0f;
+		case '-': return 5.0f;
+		case '!': return 4.0f;
+	}
+
+	return 8.0f;
+}
+
+float MeasureString(const char* txt)
+{
+	float w = 0.0f;
+
+	for(; *txt; txt++)
+		w += MeasureChar(*txt);
+
+	return w;
+}
+
+void DrawString(Vector2 pos, int flags, Colour colour, const char* txt, ...)
 {
 	char buf[512];
 
@@ -172,7 +200,12 @@ void DrawString(Vector2 pos, Colour colour, const char* txt, ...)
 	_vsnprintf_s(buf, sizeof(buf), _TRUNCATE, txt, ap);
 	va_end(ap);
 
-	const char* letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.:/-!";
+	if (flags == kTextCentre)
+		pos.x -= MeasureString(txt) * 0.5f;
+	else if (flags == kTextRight)
+		pos.x -= MeasureString(txt);
+
+	const char* letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.:/-!@";
 
 	for(const char* p = buf; *p != '\0'; p++)
 	{
@@ -185,19 +218,7 @@ void DrawString(Vector2 pos, Colour colour, const char* txt, ...)
 		if (sprite >= 0)
 			DrawChar(pos, Vector2(1.0f), sprite, 0, colour); 
 
-		switch(c)
-		{
-			case 'I':	pos.x += 4.0f; break;
-			case 'W':	pos.x += 9.0f; break;
-			case 'M':	pos.x += 9.0f; break;
-			case ':':	pos.x += 4.0f; break;
-			case '.':	pos.x += 4.0f; break;
-			case '/':	pos.x += 5.0f; break;
-			case ' ':	pos.x += 4.0f; break;
-			case '-':	pos.x += 5.0f; break;
-			case '!':	pos.x += 4.0f; break;
-			default:	pos.x += 8.0f; break;
-		}
+		pos.x += MeasureChar(c);
 	}
 }
 

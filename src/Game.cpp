@@ -181,7 +181,8 @@ struct Tile
 		kSpikesUp,
 		kSpikesDown,
 		kSpikesLeft,
-		kSpikesRight
+		kSpikesRight,
+		kDownOnly
 	};
 
 	Kind kind;
@@ -260,10 +261,15 @@ struct Map
 		return Tile::kWall;
 	}
 
-	bool CollidePt(int px, int py)
+	bool CollidePt(int px, int py, bool movingUp)
 	{
 		if (Tile* t = AtPx(px, py))
+		{
+			if (movingUp && (t->kind == Tile::kDownOnly))
+				return true;
+
 			return t->kind == Tile::kWall;
+		}
 
 		return false;
 	}
@@ -281,7 +287,7 @@ struct Map
 
 		for(int x = px0; dist >= 0; dist--, x += dlt) // TODO: Test only tile edges
 		{
-			if (CollidePt(x, py))
+			if (CollidePt(x, py, false))
 				return CollisionResult(AtPx(x, py), x, py);
 		}
 
@@ -299,9 +305,11 @@ struct Map
 			dlt = -1;
 		}
 
+		bool movingUp = (py1 < py0);
+
 		for(int y = py0; dist >= 0; dist--, y += dlt) // TODO: Test only tile edges
 		{
-			if (CollidePt(px, y))
+			if (CollidePt(px, y, movingUp))
 				return CollisionResult(AtPx(px, y), px, y);
 		}
 
@@ -383,6 +391,7 @@ bool LoadMap(Map* map, const char* path)
 					case 'v': tile->kind = Tile::kSpikesDown; break;
 					case '<': tile->kind = Tile::kSpikesLeft; break;
 					case '>': tile->kind = Tile::kSpikesRight; break;
+					case 'D': tile->kind = Tile::kDownOnly; break;
 					case 'P': map->_playerSpawnX = x; map->_playerSpawnY = y; break;
 				}
 			}
@@ -445,6 +454,7 @@ void GameUpdate()
 	static int carryX[2048];
 	static int carryY[2048];
 	static int carryHp[2048];
+	static bool titleScreen;
 
 	const int kMaxHistory = 4 * 1024;
 
@@ -454,6 +464,35 @@ void GameUpdate()
 	static bool historyJump[kMaxHistory];
 	static bool historyMoving[kMaxHistory];
 	static int historyPos = 0;
+
+	if (!titleScreen)
+	{
+		static int flash = 0;
+		flash++;
+
+		if (gKeyFire)
+		{
+			titleScreen = true;
+			jumpLatch = true;
+		}
+
+		DrawString(Vector2(0.0f, (kWinHeight * -0.4f) - 4.0f), kTextCentre, Colour(0.75f, 0.6f, 0.3f, 1.0f), "Super Conga Cat");
+
+		DrawString(Vector2(0.0f, (kWinHeight * -0.325f) - 4.0f), kTextCentre, Colour(0.75f, 0.6f, 0.3f, 0.8f), "Leave no kitten behind!");
+
+		DrawString(Vector2(0.0f, (kWinHeight * -0.15f) - 4.0f), kTextCentre, Colour(0.3f, 0.6f, 0.7f, 0.75f), "Move: Left/Right arrow keys or A/D");
+		DrawString(Vector2(0.0f, (kWinHeight * -0.075f) - 4.0f), kTextCentre, Colour(0.3f, 0.6f, 0.7f, 0.75f), "Jump: Up arrow key or SPACE");
+
+		DrawString(Vector2(0.0f, (kWinHeight * 0.075f) - 4.0f), kTextCentre, Colour(0.3f, 0.6f, 0.7f, 0.75f), "Created for Ludum Dare 24");
+		DrawString(Vector2(0.0f, (kWinHeight * 0.15f) - 4.0f), kTextCentre, Colour(0.3f, 0.6f, 0.7f, 0.75f), "by Stephen Cakebread");
+		DrawString(Vector2(0.0f, (kWinHeight * 0.225f) - 4.0f), kTextCentre, Colour(0.3f, 0.6f, 0.7f, 0.75f), "t: @quantumrain");
+
+		if (((flash >> 4) & 3) < 3)
+			DrawString(Vector2(0.0f, (kWinHeight * 0.4f) - 4.0f), kTextCentre, Colour(0.7f, 0.7f, 0.7f, 1.0f), "Press SPACE to start");
+
+
+		return;
+	}
 
 	if (dead > 0)
 	{
@@ -608,7 +647,7 @@ void GameUpdate()
 
 			if (CollisionResult cr = gMap.HCollide((int)px, (int)(px - 6.0f), (int)(py - 7.0f))) { gPlayer.pos.x = cr.px + 6.5f; gPlayer.vel.x = 0.0f; }
 			if (CollisionResult cr = gMap.HCollide((int)px, (int)(px + 6.0f), (int)(py - 7.0f))) { gPlayer.pos.x = cr.px - 6.5f; gPlayer.vel.x = 0.0f; }
-																																				   
+												   
 			if (CollisionResult cr = gMap.HCollide((int)px, (int)(px - 6.0f), (int)(py - 1.0f))) { gPlayer.pos.x = cr.px + 6.5f; gPlayer.vel.x = 0.0f; }
 			if (CollisionResult cr = gMap.HCollide((int)px, (int)(px + 6.0f), (int)(py - 1.0f))) { gPlayer.pos.x = cr.px - 6.5f; gPlayer.vel.x = 0.0f; }
 		}
@@ -849,6 +888,7 @@ void GameUpdate()
 					case Tile::kSpikesDown: tile = 22; break;
 					case Tile::kSpikesLeft: tile = 24; break;
 					case Tile::kSpikesRight: tile = 23; break;
+					case Tile::kDownOnly: tile = 25; break;
 				}
 
 				if (tile >= 0)
@@ -901,5 +941,5 @@ void GameUpdate()
 
 	UpdateParticleSystem(&gParticles, pan);
 
-	DrawString(Vector2(-(kWinWidth * 0.5f) + 2, (kWinHeight * 0.5f) - 9), Colour(), (carrying== gMap._totalKittens) ? "Kittens: %i / %i - YOU WIN!" : "Kittens: %i / %i", carrying, gMap._totalKittens);
+	DrawString(Vector2(-(kWinWidth * 0.5f) + 2, (kWinHeight * 0.5f) - 9), kTextLeft, Colour(), (carrying== gMap._totalKittens) ? "Kittens: %i / %i - YOU WIN!" : "Kittens: %i / %i", carrying, gMap._totalKittens);
 }

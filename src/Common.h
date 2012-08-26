@@ -4,6 +4,7 @@
 template<typename T> T Max(T a, T b) { return (b < a) ? a : b; }
 template<typename T> T Min(T a, T b) { return (a < b) ? a : b; }
 template<typename T> T Clamp(T v, T low, T high) { return (v < low) ? low : ((v > high) ? high : v); }
+template<typename T> T Lerp(T a, T b, float t) { return a + (b - a) * t; }
 
 template<typename T> void Swap(T& a, T& b)
 {
@@ -42,6 +43,11 @@ struct Colour
 	Colour(float rgb, float a) : r(rgb), g(rgb), b(rgb), a(a) { }
 	Colour(float r_, float g_, float b_, float a_) : r(r_), g(g_), b(b_), a(a_) { }
 };
+
+inline Colour operator+(const Colour& lhs, const Colour& rhs) { return Colour(lhs.r + rhs.r, lhs.g + rhs.g, lhs.b + rhs.b, lhs.a + rhs.a); }
+inline Colour operator-(const Colour& lhs, const Colour& rhs) { return Colour(lhs.r - rhs.r, lhs.g - rhs.g, lhs.b - rhs.b, lhs.a - rhs.a); }
+inline Colour operator*(const Colour& lhs, const Colour& rhs) { return Colour(lhs.r * rhs.r, lhs.g * rhs.g, lhs.b * rhs.b, lhs.a * rhs.a); }
+inline Colour operator/(const Colour& lhs, const Colour& rhs) { return Colour(lhs.r / rhs.r, lhs.g / rhs.g, lhs.b / rhs.b, lhs.a / rhs.a); }
 
 extern bool gHasFocus;
 extern bool gKeyUp;
@@ -102,6 +108,12 @@ enum SoundId
 {
 	kSid_Select,
 	kSid_Back,
+	kSid_Jump,
+	kSid_KittenJump,
+	kSid_Land,
+	kSid_Dead,
+	kSid_CheckPoint,
+	kSid_Kitten,
 	kSid_Max
 };
 

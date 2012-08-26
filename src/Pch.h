@@ -11,4 +11,7 @@
 #include <stdio.h>
 #include <math.h>
 
+#undef max
+#undef min
+
 #endif // PCH_H

@@ -3,6 +3,14 @@
 
 template<typename T> T Max(T a, T b) { return (b < a) ? a : b; }
 template<typename T> T Min(T a, T b) { return (a < b) ? a : b; }
+template<typename T> T Clamp(T v, T low, T high) { return (v < low) ? low : ((v > high) ? high : v); }
+
+template<typename T> void Swap(T& a, T& b)
+{
+	T t = b;
+	b = a;
+	a = t;
+}
 
 struct Vector2
 {
@@ -16,6 +24,8 @@ inline Vector2 operator+(const Vector2& lhs, const Vector2& rhs) { return Vector
 inline Vector2 operator-(const Vector2& lhs, const Vector2& rhs) { return Vector2(lhs.x - rhs.x, lhs.y - rhs.y); }
 inline Vector2 operator*(const Vector2& lhs, const Vector2& rhs) { return Vector2(lhs.x * rhs.x, lhs.y * rhs.y); }
 inline Vector2 operator/(const Vector2& lhs, const Vector2& rhs) { return Vector2(lhs.x / rhs.x, lhs.y / rhs.y); }
+
+inline Vector2 operator-(const Vector2& rhs) { return Vector2(-rhs.x, -rhs.y); }
 
 inline Vector2& operator+=(Vector2& lhs, const Vector2& rhs) { lhs.x += rhs.x; lhs.y += rhs.y; return lhs; }
 inline Vector2& operator-=(Vector2& lhs, const Vector2& rhs) { lhs.x -= rhs.x; lhs.y -= rhs.y; return lhs; }
@@ -81,7 +91,10 @@ struct Vertex
 	Colour colour;
 };
 
-void DrawRect(Vector2 p0, Vector2 p1, int sprite, Colour colour);
+enum { kFlipX = 1, kFlipY = 2 };
+
+void DrawRect(Vector2 p0, Vector2 p1, int sprite, int flags, Colour colour);
+void DrawSprite(Vector2 pos, Vector2 scale, int sprite, int flags, Colour colour);
 
 // Sound
 

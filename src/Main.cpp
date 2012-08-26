@@ -1,8 +1,8 @@
 #include "Pch.h"
 #include "Common.h"
 
-int kWinWidth	= 160;
-int kWinHeight	= 90;
+int kWinWidth	= 224;
+int kWinHeight	= 128;
 
 bool gHasFocus;
 bool gKeyUp;
@@ -72,7 +72,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	DWORD	style	= WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU;
 	DWORD	styleEx = WS_EX_WINDOWEDGE;
-	RECT	rcWin	= { 0, 0, kWinWidth * 6, kWinHeight * 6 };
+	RECT	rcWin	= { 0, 0, kWinWidth * 5, kWinHeight * 5 };
 
 	AdjustWindowRectEx(&rcWin, style, FALSE, styleEx);
 	OffsetRect(&rcWin, 100, 100);

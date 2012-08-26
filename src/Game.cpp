@@ -12,7 +12,6 @@ struct Tile
 	enum Kind
 	{
 		kEmpty,
-		kFloor,
 		kWall
 	};
 
@@ -21,11 +20,23 @@ struct Tile
 	Tile() : kind(kEmpty) { }
 };
 
+struct CollisionResult
+{
+	Tile* tile;
+	int px, py;
+
+	CollisionResult() : tile(0), px(-1), py(-1) { }
+	CollisionResult(Tile* tile_, int px_, int py_) : tile(tile_), px(px_), py(py_) { }
+
+	operator bool() const { return tile != 0; }
+};
+
 struct Map
 {
 	int _width;
 	int _height;
 	Tile* _tiles;
+	Vector2 _playerStart;
 
 	Map() : _width(0), _height(0), _tiles(0) { }
 	~Map() { Clear(); }
@@ -53,6 +64,7 @@ struct Map
 		_width = 0;
 		_height = 0;
 		_tiles = 0;
+		_playerStart = Vector2();
 	}
 
 	Tile* At(int x, int y)
@@ -63,17 +75,57 @@ struct Map
 		return &_tiles[x + (y * _width)];
 	}
 
-	bool CollidePt(int px, int py)
+	Tile* AtPx(int x, int y)
 	{
-		if (Tile* t = At(px >> 3, py >> 3))
-			return t->kind != t->kFloor;
-
-		return true;
+		return At(x >> 4, y >> 4);
 	}
 
-	bool CollideLine(int sx, int sy, int ex, int ey)
+	bool CollidePt(int px, int py)
 	{
-		
+		if (Tile* t = AtPx(px, py))
+			return t->kind != Tile::kEmpty;
+
+		return false;
+	}
+
+	CollisionResult HCollide(int px0, int px1, int py)
+	{
+		int dist = px1 - px0;
+		int dlt = 1;
+
+		if (dist < 0)
+		{
+			dist = -dist;
+			dlt = -1;
+		}
+
+		for(int x = px0; dist >= 0; dist--, x += dlt) // TODO: Test only tile edges
+		{
+			if (CollidePt(x, py))
+				return CollisionResult(AtPx(x, py), x, py);
+		}
+
+		return CollisionResult();
+	}
+
+	CollisionResult VCollide(int px, int py0, int py1)
+	{
+		int dist = py1 - py0;
+		int dlt = 1;
+
+		if (dist < 0)
+		{
+			dist = -dist;
+			dlt = -1;
+		}
+
+		for(int y = py0; dist >= 0; dist--, y += dlt) // TODO: Test only tile edges
+		{
+			if (CollidePt(px, y))
+				return CollisionResult(AtPx(px, y), px, y);
+		}
+
+		return CollisionResult();
 	}
 };
 
@@ -141,7 +193,7 @@ bool LoadMap(Map* map, const char* path)
 				switch(data[i])
 				{
 					case '#': tile->kind = Tile::kWall; break;
-					case '.': tile->kind = Tile::kFloor; break;
+					case 'P': map->_playerStart = Vector2(x * 16.0f + 8.0f, y * 16.0f + 15.0f); break;
 				}
 			}
 
@@ -154,7 +206,14 @@ bool LoadMap(Map* map, const char* path)
 	return true;
 }
 
+struct Player
+{
+	Vector2 pos;
+	Vector2 vel;
+};
+
 Map gMap;
+Player gPlayer;
 
 void GameInit()
 {
@@ -162,36 +221,93 @@ void GameInit()
 	{
 		DebugLn("Failed to load map");
 	}
+	else
+	{
+		gPlayer.pos = gMap._playerStart;
+	}
 }
 
 void GameUpdate()
 {
-	static Vector2 pos;
-	static Vector2 vel;
-	static float t;
-	static bool beep;
+	static bool dir;
+	static bool jump;
+	static bool start;
+	static bool onGround;
+	static int groundTime;
+	static int jumpTime;
 
-	if (gKeyFire)
+	gPlayer.vel.x -= gKeyLeft * 30.0f;
+	gPlayer.vel.x += gKeyRight * 30.0f;
+	
+	if (gKeyUp)
 	{
-		if (!beep)
+		if (groundTime > 4)
 		{
-			SoundPlay(kSid_Select, 1.0f, 1.0f);
-		}
+			if (!jump)
+			{
+				SoundPlay(kSid_Select, 1.0f, 0.5f);
 
-		beep = true;
+				gPlayer.vel.y -= 90.0f;
+				jumpTime = 15;
+				jump = true;
+			}
+		}
+		else
+			jump = false;
 	}
 	else
-		beep = false;
+	{
+		jump = false;
+		jumpTime = 0;
+	}
 
-	t += 0.05f;
+	if (gKeyUp && (jumpTime > 0))
+	{
+		gPlayer.vel.y -= 5.0f;
+		jumpTime--;
+	}
+	else
+		jumpTime = 0;
 
-	vel.x -= gKeyLeft * 10.0f;
-	vel.x += gKeyRight * 10.0f;
-	vel.y -= gKeyUp * 10.0f;
-	vel.y += gKeyDown * 10.0f;
+	bool isMoving = gKeyLeft || gKeyRight || gKeyUp || gKeyDown;
 
-	pos += vel * (1.0f / 60.0f);
-	vel *= 0.8f;
+	if (gKeyLeft ^ gKeyRight)
+		dir = gKeyLeft ? 0 : 1;
+
+	gPlayer.vel.x *= 0.7f;
+	gPlayer.vel.y = Clamp(gPlayer.vel.y + 5.0f, -200.0f, 200.0f);
+
+	gPlayer.pos.x += gPlayer.vel.x * (1.0f / 60.0f);
+
+	{ // X
+		float px = floorf(gPlayer.pos.x + 0.5f);
+		float py = floorf(gPlayer.pos.y + 0.5f);
+
+		if (CollisionResult cr = gMap.HCollide((int)px, (int)(px - 6.0f), (int)(py - 7.0f))) { gPlayer.pos.x = cr.px + 6.5f; gPlayer.vel.x = 0.0f; }
+		if (CollisionResult cr = gMap.HCollide((int)px, (int)(px + 6.0f), (int)(py - 7.0f))) { gPlayer.pos.x = cr.px - 6.5f; gPlayer.vel.x = 0.0f; }
+
+		if (CollisionResult cr = gMap.HCollide((int)px, (int)(px - 6.0f), (int)(py - 1.0f))) { gPlayer.pos.x = cr.px + 6.5f; gPlayer.vel.x = 0.0f; }
+		if (CollisionResult cr = gMap.HCollide((int)px, (int)(px + 6.0f), (int)(py - 1.0f))) { gPlayer.pos.x = cr.px - 6.5f; gPlayer.vel.x = 0.0f; }
+	}
+
+	onGround = false;
+	gPlayer.pos.y += gPlayer.vel.y * (1.0f / 60.0f);
+
+	{ // Y
+		float px = floorf(gPlayer.pos.x + 0.5f);
+		float py = floorf(gPlayer.pos.y + 0.5f);
+
+		if (CollisionResult cr = gMap.VCollide((int)(px - 5.0f), (int)(py - 4.0f), (int)(py - 9.0f))) { gPlayer.pos.y = cr.py + 9.5f; gPlayer.vel.y = 0.0f; jumpTime = 0; }
+		if (CollisionResult cr = gMap.VCollide((int)(px - 5.0f), (int)(py - 4.0f), (int)(py + 1.0f))) { gPlayer.pos.y = cr.py - 1.5f; gPlayer.vel.y = 0.0f; onGround = true; }
+
+		if (CollisionResult cr = gMap.VCollide((int)(px + 5.0f), (int)(py - 4.0f), (int)(py - 9.0f))) { gPlayer.pos.y = cr.py + 9.5f; gPlayer.vel.y = 0.0f; jumpTime = 0; }
+		if (CollisionResult cr = gMap.VCollide((int)(px + 5.0f), (int)(py - 4.0f), (int)(py + 1.0f))) { gPlayer.pos.y = cr.py - 1.5f; gPlayer.vel.y = 0.0f; onGround = true; }
+	}
+
+	if (onGround)
+		groundTime++;
+	else
+		groundTime = 0;
 
 	Colour colour(1.0f);
 
@@ -201,5 +317,39 @@ void GameUpdate()
 	static int anim =0;
 	anim++;
 
-	DrawRect(pos - Vector2(8), pos + Vector2(8), 1+((anim>>3)%3), colour);
+	int frame = 0;
+
+	if (isMoving)
+		frame = 4 + ((anim >> 3) % 3);
+	else
+		frame = ((anim >> 5) % 4);
+
+	if (!onGround)
+	{
+		if (fabsf(gPlayer.vel.y) < 30.0f)
+			frame = 8;
+		else
+			frame = (gPlayer.vel.y < 0.0f) ? 7 : 9;
+	}
+	
+	Vector2 pan = -gPlayer.pos;
+
+	for(int y = 0; y < gMap._height; y++)
+	{
+		for(int x = 0; x < gMap._width; x++)
+		{
+			if (Tile* t = gMap.At(x, y))
+			{
+				if (t->kind == Tile::kEmpty)
+					continue;
+
+				Vector2 p0(x * 16.0f, y * 16.0f);
+				Vector2 p1((x + 1) * 16.0f, (y + 1) * 16.0f);
+
+				DrawRect(p0 + pan, p1 + pan, 16, 0, Colour());
+			}
+		}
+	}
+
+	DrawSprite(gPlayer.pos + pan - Vector2(dir ? 1.0f : -1.0f, 7.0f), Vector2(1.0f), frame, dir ? kFlipX : 0, colour);
 }

@@ -1,3 +1,23 @@
+/*
+###########
+.#........# nice left hand wall with full spikes on other?
+.#K.......#
+.#........#
+K#>.......#
+.#>.......#
+K#>......K#
+.#........#
+K#.......<#
+.#.......<#
+K#K......<#
+.#........#
+K#>.......#
+.#>.......#
+K#>.......#
+.P........#
+###########
+*/
+
 // Copyright 2012 Stephen Cakebread
 
 #include "Pch.h"
@@ -480,7 +500,7 @@ void GameUpdate()
 		if (onGround)
 			jumpDouble = false;
 
-		if (gKeyUp && !gKeyDown && !dive)
+		if ((gKeyUp || gKeyFire) && !gKeyDown && !dive)
 		{
 			bool grounded = (groundTime > 3) || (recentOnGround > 0);
 			bool canJump = grounded;
@@ -540,7 +560,7 @@ void GameUpdate()
 			jumpTime = 0;
 		}
 
-		if (gKeyUp && (jumpTime > 0))
+		if ((gKeyUp || gKeyFire) && (jumpTime > 0))
 		{
 			gPlayer.vel.y -= 5.0f;
 			jumpTime--;
@@ -705,7 +725,7 @@ void GameUpdate()
 		if (onGround)
 		{
 			groundTime++;
-			recentOnGround = 6;
+			recentOnGround = 8;
 		}
 		else
 		{

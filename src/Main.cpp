@@ -2,6 +2,7 @@
 
 #include "Pch.h"
 #include "Common.h"
+#include "resource.h"
 
 int kWinWidth	= 288;
 int kWinHeight	= 160;
@@ -31,7 +32,7 @@ HWND gMainWnd;
 
 void Panic(const char* msg)
 {
-	MessageBoxA(gMainWnd, msg, "LD24", MB_ICONERROR | MB_OK);
+	MessageBoxA(gMainWnd, msg, "LD24 - Super Conga Kat", MB_ICONERROR | MB_OK);
 	ExitProcess(0);
 }
 
@@ -68,6 +69,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	wc.lpszClassName = L"MainWnd";
 	wc.lpfnWndProc = MainWndProc;
+	wc.hIcon = LoadIcon(GetModuleHandle(0), MAKEINTRESOURCE(IDI_LD24));
 	wc.hCursor = LoadCursor(0, MAKEINTRESOURCE(IDC_ARROW));
 
 	RegisterClassEx(&wc);
@@ -79,7 +81,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	AdjustWindowRectEx(&rcWin, style, FALSE, styleEx);
 	OffsetRect(&rcWin, 100, 100);
 
-	gMainWnd = CreateWindowEx(styleEx, wc.lpszClassName, L"LD24", style, rcWin.left, rcWin.top, rcWin.right - rcWin.left, rcWin.bottom - rcWin.top, 0, 0, 0, 0);
+	gMainWnd = CreateWindowEx(styleEx, wc.lpszClassName, L"LD24 - Super Conga Kat", style, rcWin.left, rcWin.top, rcWin.right - rcWin.left, rcWin.bottom - rcWin.top, 0, 0, 0, 0);
 
 	ShowWindow(gMainWnd, SW_SHOWNORMAL);
 

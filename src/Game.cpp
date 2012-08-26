@@ -476,7 +476,7 @@ void GameUpdate()
 			jumpLatch = true;
 		}
 
-		DrawString(Vector2(0.0f, (kWinHeight * -0.4f) - 4.0f), kTextCentre, Colour(0.75f, 0.6f, 0.3f, 1.0f), "Super Conga Cat");
+		DrawString(Vector2(0.0f, (kWinHeight * -0.4f) - 4.0f), kTextCentre, Colour(0.75f, 0.6f, 0.3f, 1.0f), "Super Conga Kat");
 
 		DrawString(Vector2(0.0f, (kWinHeight * -0.325f) - 4.0f), kTextCentre, Colour(0.75f, 0.6f, 0.3f, 0.8f), "Leave no kitten behind!");
 

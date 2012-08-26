@@ -3,6 +3,7 @@
   <ItemGroup>
     <ClInclude Include="src\Common.h" />
     <ClInclude Include="src\Pch.h" />
+    <ClInclude Include="src\resource.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Game.cpp" />
@@ -15,5 +16,11 @@
   <ItemGroup>
     <CustomBuild Include="src\ShaderPsh.hlsl" />
     <CustomBuild Include="src\ShaderVsh.hlsl" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="src\ld24.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="src\ld24.rc" />
   </ItemGroup>
 </Project>

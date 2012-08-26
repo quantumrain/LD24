@@ -186,8 +186,9 @@ struct Map
 	int _height;
 	Tile* _tiles;
 	int _playerSpawnX, _playerSpawnY;
+	int _totalKittens;
 
-	Map() : _width(0), _height(0), _tiles(0), _playerSpawnX(0), _playerSpawnY(0) { }
+	Map() : _width(0), _height(0), _tiles(0), _playerSpawnX(0), _playerSpawnY(0), _totalKittens(0) { }
 	~Map() { Clear(); }
 
 	bool Init(int width, int height)
@@ -215,6 +216,7 @@ struct Map
 		_tiles = 0;
 		_playerSpawnX = 0;
 		_playerSpawnY = 0;
+		_totalKittens = 0;
 	}
 
 	Tile* At(int x, int y)
@@ -356,7 +358,7 @@ bool LoadMap(Map* map, const char* path)
 					case ' ': tile->kind = Tile::kWall; break;
 					case '#': tile->kind = Tile::kWall; break;
 					case 'C': tile->kind = Tile::kCheckPoint; break;
-					case 'K': tile->kind = Tile::kKitten; break;
+					case 'K': tile->kind = Tile::kKitten; map->_totalKittens++; break;
 					case '^': tile->kind = Tile::kSpikesUp; break;
 					case 'v': tile->kind = Tile::kSpikesDown; break;
 					case '<': tile->kind = Tile::kSpikesLeft; break;
@@ -879,5 +881,5 @@ void GameUpdate()
 
 	UpdateParticleSystem(&gParticles, pan);
 
-	DrawString(Vector2(0.0f, 0.0f), Colour(), "Hello");
+	DrawString(Vector2(-(kWinWidth * 0.5f) + 2, (kWinHeight * 0.5f) - 9), Colour(), (carrying== gMap._totalKittens) ? "Kittens: %i / %i - YOU WIN!" : "Kittens: %i / %i", carrying, gMap._totalKittens);
 }

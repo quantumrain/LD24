@@ -172,22 +172,34 @@ void DrawString(Vector2 pos, Colour colour, const char* txt, ...)
 	_vsnprintf_s(buf, sizeof(buf), _TRUNCATE, txt, ap);
 	va_end(ap);
 
-	const char* letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.";
+	const char* letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.:/-!";
 
 	for(const char* p = buf; *p != '\0'; p++)
 	{
+		int c = toupper(*p);
 		int sprite = -1;
 
-		if (const char* c = strchr(letters, toupper(*p)))
-			sprite = 256 + (int)(intptr_t)(c - letters);
+		if (const char* ofs = strchr(letters, c))
+			sprite = 256 + (int)(intptr_t)(ofs - letters);
 
 		if (sprite >= 0)
 			DrawChar(pos, Vector2(1.0f), sprite, 0, colour); 
 
-		pos.x += 8.0f;
+		switch(c)
+		{
+			case 'I':	pos.x += 4.0f; break;
+			case 'W':	pos.x += 9.0f; break;
+			case 'M':	pos.x += 9.0f; break;
+			case ':':	pos.x += 4.0f; break;
+			case '.':	pos.x += 4.0f; break;
+			case '/':	pos.x += 5.0f; break;
+			case ' ':	pos.x += 4.0f; break;
+			case '-':	pos.x += 5.0f; break;
+			case '!':	pos.x += 4.0f; break;
+			default:	pos.x += 8.0f; break;
+		}
 	}
 }
-
 
 void RenderInit()
 {

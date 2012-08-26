@@ -396,8 +396,8 @@ void GameUpdate()
 	static int jumpTime;
 	static bool dive;
 	static bool inAir;
-	static bool jumpAvailable;
 	static bool jumpLatch;
+	static bool jumpDouble;
 	static int wallL;
 	static int wallR;
 	static int lastFrame;
@@ -442,8 +442,8 @@ void GameUpdate()
 			jumpTime = 0;
 			dive = false;
 			inAir = false;
-			jumpAvailable = false;
 			jumpLatch = true;
+			jumpDouble = false;
 			wallL = 0;
 			wallR = 0;
 			carrying = checkCarrying;
@@ -458,29 +458,32 @@ void GameUpdate()
 		gPlayer.vel.x += gKeyRight * moveSpeed;
 		
 		bool jumpedThisFrame = false;
-	
-		if (groundTime > 3)
-			jumpAvailable = true;
+
+		if (onGround)
+			jumpDouble = false;
 
 		if (gKeyUp && !gKeyDown && !dive)
 		{
-			bool canJump = jumpAvailable;
+			bool canJump = groundTime > 3;
 			float boost = 0.0f;
 			int wallJump = 0;
 
-			if (!gKeyLeft && gKeyRight && (wallL > 0) && !jumpLatch)
+			if (!onGround && (gKeyLeft ^ gKeyRight) && (wallL > 0) && !jumpLatch)
 			{
 				canJump = true;
-				boost = 80.0f;
+				boost = 120.0f;
 				wallJump = -1;
 			}
 
-			if (gKeyLeft && !gKeyRight && (wallR > 0) && !jumpLatch)
+			if (!onGround && (gKeyLeft ^ gKeyRight) && (wallR > 0) && !jumpLatch)
 			{
 				canJump = true;
-				boost = -80.0f;
+				boost = -120.0f;
 				wallJump = 1;
 			}
+
+			if (!jumpDouble && !jumpLatch && !onGround && (gPlayer.vel.y > -20.0f))
+				canJump = true;
 
 			if (canJump)
 			{
@@ -492,12 +495,16 @@ void GameUpdate()
 					if (!onGround)
 						gPlayer.vel.y = 0;
 
+					if (onGround || wallJump)
+						jumpDouble = false;
+					else if (!jumpDouble)
+						jumpDouble = true;
+
 					gPlayer.vel.x += boost;
 					gPlayer.vel.y -= 90.0f;
 					jumpTime = 15;
 					jump = true;
 					jumpLatch = true;
-					jumpAvailable = false;
 					wallL = 0;
 					wallR = 0;
 

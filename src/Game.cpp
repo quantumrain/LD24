@@ -1,5 +1,10 @@
+// Copyright 2012 Stephen Cakebread
+
 #include "Pch.h"
 #include "Common.h"
+
+extern int kWinWidth;
+extern int kWinHeight;
 
 float FRand(float mag)
 {
@@ -153,12 +158,15 @@ struct Tile
 		kWall,
 		kCheckPoint,
 		kKitten,
-		kSpikesUp
+		kSpikesUp,
+		kSpikesDown,
+		kSpikesLeft,
+		kSpikesRight
 	};
 
 	Kind kind;
 
-	Tile() : kind(kEmpty) { }
+	Tile() : kind(kWall) { }
 };
 
 struct CollisionResult
@@ -227,7 +235,7 @@ struct Map
 		if (Tile* tile = At(x, y))
 			return tile->kind;
 
-		return Tile::kEmpty;
+		return Tile::kWall;
 	}
 
 	bool CollidePt(int px, int py)
@@ -340,12 +348,19 @@ bool LoadMap(Map* map, const char* path)
 		{
 			if (Tile* tile = map->At(x, y))
 			{
+				tile->kind = Tile::kEmpty;
+
 				switch(data[i])
 				{
+					case '.': tile->kind = Tile::kEmpty; break;
+					case ' ': tile->kind = Tile::kWall; break;
 					case '#': tile->kind = Tile::kWall; break;
 					case 'C': tile->kind = Tile::kCheckPoint; break;
 					case 'K': tile->kind = Tile::kKitten; break;
 					case '^': tile->kind = Tile::kSpikesUp; break;
+					case 'v': tile->kind = Tile::kSpikesDown; break;
+					case '<': tile->kind = Tile::kSpikesLeft; break;
+					case '>': tile->kind = Tile::kSpikesRight; break;
 					case 'P': map->_playerSpawnX = x; map->_playerSpawnY = y; break;
 				}
 			}
@@ -398,6 +413,7 @@ void GameUpdate()
 	static bool inAir;
 	static bool jumpLatch;
 	static bool jumpDouble;
+	static int recentOnGround;
 	static int wallL;
 	static int wallR;
 	static int lastFrame;
@@ -464,7 +480,8 @@ void GameUpdate()
 
 		if (gKeyUp && !gKeyDown && !dive)
 		{
-			bool canJump = groundTime > 3;
+			bool grounded = (groundTime > 3) || (recentOnGround > 0);
+			bool canJump = grounded;
 			float boost = 0.0f;
 			int wallJump = 0;
 
@@ -482,7 +499,7 @@ void GameUpdate()
 				wallJump = 1;
 			}
 
-			if (!jumpDouble && !jumpLatch && !onGround && (gPlayer.vel.y > -20.0f))
+			if (!jumpDouble && !jumpLatch && !grounded && (gPlayer.vel.y > -20.0f))
 				canJump = true;
 
 			if (canJump)
@@ -495,7 +512,7 @@ void GameUpdate()
 					if (!onGround)
 						gPlayer.vel.y = 0;
 
-					if (onGround || wallJump)
+					if (grounded || wallJump)
 						jumpDouble = false;
 					else if (!jumpDouble)
 						jumpDouble = true;
@@ -658,9 +675,17 @@ void GameUpdate()
 							break;
 
 							case Tile::kSpikesUp:
+							case Tile::kSpikesDown:
+							case Tile::kSpikesLeft:
+							case Tile::kSpikesRight:
 							{
-								Vector2 tileCentre((x * 16.0f) + 8.0f, (y * 16.0f) + 14.0f);
-								Vector2 tileSize(14.0f, 4.0f);
+								Vector2 tileCentre;
+								Vector2 tileSize;
+
+								if (tile->kind == Tile::kSpikesUp)			{ tileCentre = Vector2((x * 16.0f) + 8.0f, (y * 16.0f) + 14.0f);	tileSize = Vector2(14.0f, 4.0f); }
+								else if (tile->kind == Tile::kSpikesDown)	{ tileCentre = Vector2((x * 16.0f) + 8.0f, (y * 16.0f) + 2.0f);		tileSize = Vector2(14.0f, 4.0f); }
+								else if (tile->kind == Tile::kSpikesLeft)	{ tileCentre = Vector2((x * 16.0f) + 14.0f, (y * 16.0f) + 8.0f);	tileSize = Vector2(4.0f, 14.0f); }
+								else if (tile->kind == Tile::kSpikesRight)	{ tileCentre = Vector2((x * 16.0f) + 2.0f, (y * 16.0f) + 8.0f);		tileSize = Vector2(4.0f, 14.0f); }
 
 								if (OverlapsRect(playerCentre, playerSize, tileCentre, tileSize))
 								{
@@ -676,9 +701,15 @@ void GameUpdate()
 		}
 
 		if (onGround)
+		{
 			groundTime++;
+			recentOnGround = 6;
+		}
 		else
+		{
 			groundTime = 0;
+			recentOnGround = Max(recentOnGround - 1, 0);
+		}
 
 		if (onGround)
 		{
@@ -752,13 +783,19 @@ void GameUpdate()
 
 	Vector2 pan = -gPlayer.pos;
 
-	for(int y = 0; y < gMap._height; y++)
 	{
-		for(int x = 0; x < gMap._width; x++)
+		int x0 = (int)floorf((gPlayer.pos.x - kWinWidth * 0.5f) / 16.0f);
+		int y0 = (int)floorf((gPlayer.pos.y - kWinHeight * 0.5f) / 16.0f);
+		int x1 = (int)ceilf((gPlayer.pos.x + kWinWidth * 0.5f) / 16.0f);
+		int y1 = (int)ceilf((gPlayer.pos.y + kWinHeight * 0.5f) / 16.0f);
+
+		for(int y = y0; y <= y1; y++)
 		{
-			if (Tile* t = gMap.At(x, y))
+			for(int x = x0; x <= x1; x++)
 			{
-				if (t->kind == Tile::kEmpty)
+				Tile::Kind t = gMap.AtKind(x, y);
+
+				if (t == Tile::kEmpty)
 					continue;
 
 				Vector2 p0(x * 16.0f, y * 16.0f);
@@ -766,7 +803,7 @@ void GameUpdate()
 
 				int tile = -1;
 
-				switch(t->kind)
+				switch(t)
 				{
 					case Tile::kWall:
 						if (gMap.AtKind(x, y - 1) != Tile::kWall)
@@ -780,12 +817,16 @@ void GameUpdate()
 					break;
 
 					case Tile::kKitten:
-						tile = 50;
+						if (gMap.AtKind(x, y + 1) == Tile::kWall)
+							tile = 50;
+						else
+							tile = 52;
 					break;
 
-					case Tile::kSpikesUp:
-						tile = 19;
-					break;
+					case Tile::kSpikesUp: tile = 19; break;
+					case Tile::kSpikesDown: tile = 22; break;
+					case Tile::kSpikesLeft: tile = 24; break;
+					case Tile::kSpikesRight: tile = 23; break;
 				}
 
 				if (tile >= 0)
@@ -837,4 +878,6 @@ void GameUpdate()
 	}
 
 	UpdateParticleSystem(&gParticles, pan);
+
+	DrawString(Vector2(0.0f, 0.0f), Colour(), "Hello");
 }

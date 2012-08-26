@@ -1,3 +1,5 @@
+// Copyright 2012 Stephen Cakebread
+
 #include "Pch.h"
 #include "Common.h"
 

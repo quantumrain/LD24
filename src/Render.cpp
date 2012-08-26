@@ -1,3 +1,5 @@
+// Copyright 2012 Stephen Cakebread
+
 #include "Pch.h"
 #include "Common.h"
 #include "ShaderPsh.h"
@@ -86,6 +88,106 @@ void DrawSprite(Vector2 pos, Vector2 scale, int sprite, int flags, Colour colour
 {
 	DrawRect(pos - scale * Vector2(8.0f), pos + scale * Vector2(8.0f), sprite, flags, colour);
 }
+
+void DrawCharRect(Vector2 p0, Vector2 p1, int sprite, int flags, Colour colour)
+{
+	if ((gRectVertCount + 6) > kMaxRectVerts)
+	{
+		DebugLn("DrawRect overflow");
+		return;
+	}
+
+	Vertex* v = &gRectVerts[gRectVertCount];
+
+	gRectVertCount += 6;
+
+	int sx = sprite & 0x1F;
+	int sy = sprite >> 5;
+
+	Vector2 uv0(sx / 32.0f, sy / 32.0f);
+	Vector2 uv1((sx + 1) / 32.0f, (sy + 1) / 32.0f);
+	Vector2 scale(2.0f / (float)kWinWidth, -2.0f / (float)kWinHeight);
+
+	if (flags & kFlipX) Swap(uv0.x, uv1.x);
+	if (flags & kFlipY) Swap(uv0.y, uv1.y);
+
+	// t0
+
+	v->pos.x	= p0.x * scale.x;
+	v->pos.y	= p0.y * scale.y;
+	v->uv.x		= uv0.x;
+	v->uv.y		= uv0.y;
+	v->colour	= colour;
+	v++;
+
+	v->pos.x	= p1.x * scale.x;
+	v->pos.y	= p0.y * scale.y;
+	v->uv.x		= uv1.x;
+	v->uv.y		= uv0.y;
+	v->colour	= colour;
+	v++;
+
+	v->pos.x	= p1.x * scale.x;
+	v->pos.y	= p1.y * scale.y;
+	v->uv.x		= uv1.x;
+	v->uv.y		= uv1.y;
+	v->colour	= colour;
+	v++;
+
+	// t1
+
+	v->pos.x	= p0.x * scale.x;
+	v->pos.y	= p0.y * scale.y;
+	v->uv.x		= uv0.x;
+	v->uv.y		= uv0.y;
+	v->colour	= colour;
+	v++;
+
+	v->pos.x	= p1.x * scale.x;
+	v->pos.y	= p1.y * scale.y;
+	v->uv.x		= uv1.x;
+	v->uv.y		= uv1.y;
+	v->colour	= colour;
+	v++;
+
+	v->pos.x	= p0.x * scale.x;
+	v->pos.y	= p1.y * scale.y;
+	v->uv.x		= uv0.x;
+	v->uv.y		= uv1.y;
+	v->colour	= colour;
+}
+
+void DrawChar(Vector2 pos, Vector2 scale, int sprite, int flags, Colour colour)
+{
+	DrawCharRect(pos, pos + scale * Vector2(8.0f), sprite, flags, colour);
+}
+
+void DrawString(Vector2 pos, Colour colour, const char* txt, ...)
+{
+	char buf[512];
+
+	va_list ap;
+
+	va_start(ap, txt);
+	_vsnprintf_s(buf, sizeof(buf), _TRUNCATE, txt, ap);
+	va_end(ap);
+
+	const char* letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.";
+
+	for(const char* p = buf; *p != '\0'; p++)
+	{
+		int sprite = -1;
+
+		if (const char* c = strchr(letters, toupper(*p)))
+			sprite = 256 + (int)(intptr_t)(c - letters);
+
+		if (sprite >= 0)
+			DrawChar(pos, Vector2(1.0f), sprite, 0, colour); 
+
+		pos.x += 8.0f;
+	}
+}
+
 
 void RenderInit()
 {

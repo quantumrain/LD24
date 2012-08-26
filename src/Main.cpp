@@ -1,8 +1,10 @@
+// Copyright 2012 Stephen Cakebread
+
 #include "Pch.h"
 #include "Common.h"
 
-int kWinWidth	= 224;
-int kWinHeight	= 128;
+int kWinWidth	= 288;
+int kWinHeight	= 160;
 
 bool gHasFocus;
 bool gKeyUp;
@@ -72,7 +74,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	DWORD	style	= WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU;
 	DWORD	styleEx = WS_EX_WINDOWEDGE;
-	RECT	rcWin	= { 0, 0, kWinWidth * 5, kWinHeight * 5 };
+	RECT	rcWin	= { 0, 0, kWinWidth * 4, kWinHeight * 4 };
 
 	AdjustWindowRectEx(&rcWin, style, FALSE, styleEx);
 	OffsetRect(&rcWin, 100, 100);
@@ -109,14 +111,14 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 			/* adapter */				0,
 			/* driver type */			D3D10_DRIVER_TYPE_HARDWARE,
 			/* software */				0,
-			/* flags */					D3D10_CREATE_DEVICE_DEBUG,
+			/* flags */					0,
 			/* sdk version */			D3D10_SDK_VERSION,
 			/* swap chain desc */		&scd,
 			/* swap chain */			&sc,
 			/* device */				&gDevice
 		)))
 	{
-		Panic("D3D CreateDevice failed - do you have D3D11 installed?");
+		Panic("D3D CreateDevice failed - do you have D3D10 installed?");
 	}
 
 	ID3D10Texture2D* bb;

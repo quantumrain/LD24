@@ -169,9 +169,12 @@ void SoundShutdown()
 	{
 		Sound& sound = gSound[i];
 
-		sound.pSourceVoice->Stop();
-		sound.pSourceVoice->FlushSourceBuffers();
-		sound.pSourceVoice->DestroyVoice();
+		if (sound.pSourceVoice)
+		{
+			sound.pSourceVoice->Stop();
+			sound.pSourceVoice->FlushSourceBuffers();
+			sound.pSourceVoice->DestroyVoice();
+		}
 	}
 
 	gXAudio->Release();
@@ -181,10 +184,13 @@ void SoundPlay(SoundId sid, float freq, float volume)
 {
 	Sound& sound = gSound[sid];
 
-	sound.pSourceVoice->Stop();
-	sound.pSourceVoice->FlushSourceBuffers();
-	sound.pSourceVoice->SubmitSourceBuffer(&sound.buffer);
-	sound.pSourceVoice->SetFrequencyRatio(freq);
-	sound.pSourceVoice->SetVolume(volume);
-	sound.pSourceVoice->Start();
+	if (sound.pSourceVoice)
+	{
+		sound.pSourceVoice->Stop();
+		sound.pSourceVoice->FlushSourceBuffers();
+		sound.pSourceVoice->SubmitSourceBuffer(&sound.buffer);
+		sound.pSourceVoice->SetFrequencyRatio(freq);
+		sound.pSourceVoice->SetVolume(volume);
+		sound.pSourceVoice->Start();
+	}
 }

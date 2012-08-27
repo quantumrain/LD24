@@ -84,7 +84,7 @@ namespace gpu
 	void DestroyTexture2d(Texture2d* tex);
 	void SetTexture(Texture2d* tex);
 
-	void Init(ID3D10RenderTargetView* rtv, ID3D10BlendState* blendState);
+	void Init();
 	void Clear(const Colour& colour);
 	void Draw(ShaderDecl* decl, VertexBuffer* vb, int count);
 

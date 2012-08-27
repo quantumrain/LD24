@@ -139,7 +139,9 @@ Sound gSound[kSid_Max];
 
 void SoundInit()
 {
-	if (FAILED(XAudio2Create(&gXAudio, XAUDIO2_DEBUG_ENGINE, XAUDIO2_DEFAULT_PROCESSOR)))
+	ZeroMemory(gSound, sizeof(gSound));
+
+	if (FAILED(XAudio2Create(&gXAudio, 0, XAUDIO2_DEFAULT_PROCESSOR)))
 	{
 		DebugLn("XAudioCreate failed");
 		return;

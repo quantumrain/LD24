@@ -59,7 +59,8 @@ LRESULT CALLBACK MainWndProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 	return DefWindowProc(hwnd, msg, wparam, lparam);
 }
 
-ID3D10Device* gDevice;
+IDirect3D9* gD3d;
+IDirect3DDevice9* gDevice;
 
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 {
@@ -87,80 +88,37 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	// Graphics
 
-	DXGI_SWAP_CHAIN_DESC scd = { };
-
-	scd.BufferDesc.Width					= kWinWidth;
-	scd.BufferDesc.Height					= kWinHeight;
-	scd.BufferDesc.RefreshRate.Numerator	= 1;
-	scd.BufferDesc.RefreshRate.Denominator	= 60;
-	scd.BufferDesc.Format					= DXGI_FORMAT_R8G8B8A8_UNORM;
-	scd.BufferDesc.ScanlineOrdering			= DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
-	scd.BufferDesc.Scaling					= DXGI_MODE_SCALING_CENTERED;
-
-	scd.SampleDesc.Count	= 1;
-	scd.SampleDesc.Quality	= 0;
-
-	scd.BufferUsage		= DXGI_USAGE_RENDER_TARGET_OUTPUT;
-	scd.BufferCount		= 1;
-	scd.OutputWindow	= gMainWnd;
-	scd.Windowed		= TRUE;
-	scd.SwapEffect		= DXGI_SWAP_EFFECT_DISCARD;
-	scd.Flags			= 0;
-
-	IDXGISwapChain* sc = 0;
-
-	if (FAILED(D3D10CreateDeviceAndSwapChain(
-			/* adapter */				0,
-			/* driver type */			D3D10_DRIVER_TYPE_HARDWARE,
-			/* software */				0,
-			/* flags */					0,
-			/* sdk version */			D3D10_SDK_VERSION,
-			/* swap chain desc */		&scd,
-			/* swap chain */			&sc,
-			/* device */				&gDevice
-		)))
+	if ((gD3d = Direct3DCreate9(D3D_SDK_VERSION)) == 0)
 	{
-		Panic("D3D CreateDevice failed - do you have D3D10 installed?");
+		Panic("D3DCreate failed - do you have D3D9 installed?");
 	}
 
-	ID3D10Texture2D* bb;
-	sc->GetBuffer(0, __uuidof(ID3D10Texture2D), (void**)&bb);
+	D3DPRESENT_PARAMETERS pp = { };
 
-	ID3D10RenderTargetView* rtv = 0;
-	gDevice->CreateRenderTargetView(bb, 0, &rtv);
+	pp.Windowed			= TRUE;
+	pp.SwapEffect		= D3DSWAPEFFECT_DISCARD;
+	pp.BackBufferWidth	= kWinWidth;
+	pp.BackBufferHeight	= kWinHeight;
+	pp.BackBufferFormat	= D3DFMT_A8R8G8B8;
+	pp.hDeviceWindow	= gMainWnd;
+	pp.PresentationInterval = D3DPRESENT_INTERVAL_ONE;
 
-	bb->Release();
+	if (FAILED(gD3d->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, gMainWnd, D3DCREATE_HARDWARE_VERTEXPROCESSING, &pp, &gDevice)))
+	{
+		Panic("D3D CreateDevice failed - do you have D3D9 installed?");
+	}
 
-	gDevice->OMSetRenderTargets(1, &rtv, 0);
-
-    D3D10_VIEWPORT vp;
+	D3DVIEWPORT9 vp;
     vp.Width = kWinWidth;
     vp.Height = kWinHeight;
-    vp.MinDepth = 0.0f;
-    vp.MaxDepth = 1.0f;
-    vp.TopLeftX = 0;
-    vp.TopLeftY = 0;
-    gDevice->RSSetViewports(1, &vp);
+    vp.MinZ = 0.0f;
+    vp.MaxZ = 1.0f;
+    vp.X = 0;
+    vp.Y = 0;
 
-	D3D10_BLEND_DESC bd = { 0 };
+	gDevice->SetViewport(&vp);
 
-	bd.AlphaToCoverageEnable = FALSE;
-	bd.BlendEnable[0] = TRUE;
-	bd.SrcBlend = D3D10_BLEND_SRC_ALPHA;
-	bd.DestBlend = D3D10_BLEND_INV_SRC_ALPHA;
-	bd.BlendOp = D3D10_BLEND_OP_ADD;
-	bd.SrcBlendAlpha = D3D10_BLEND_ONE;
-	bd.DestBlendAlpha = D3D10_BLEND_ONE;
-	bd.BlendOpAlpha = D3D10_BLEND_OP_ADD;
-	bd.RenderTargetWriteMask[0] = D3D10_COLOR_WRITE_ENABLE_ALL;
-
-	ID3D10BlendState* blendState = 0;
-	if (FAILED(gDevice->CreateBlendState(&bd, &blendState)))
-	{
-		Panic("CreateBlendState failed");
-	}
-
-	gpu::Init(rtv, blendState);
+	gpu::Init();
 
 	// Audio
 
@@ -195,8 +153,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		}
 		else
 		{
-			if (sc)
+			if (gDevice)
 			{
+				gDevice->BeginScene();
+
 				void RenderPreUpdate();
 				RenderPreUpdate();
 
@@ -212,24 +172,26 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 				void RenderGame();
 				RenderGame();
 
-				sc->Present(1, 0);
+				gDevice->EndScene();
+				gDevice->Present(0, 0, 0, 0);
 			}
 
 			Sleep(gHasFocus ? 0 : 250);
 		}
 	}
 	
-	gDevice->ClearState();
-	sc->SetFullscreenState(FALSE, 0);
+	gDevice->SetVertexDeclaration(0);
+	gDevice->SetVertexShader(0);
+	gDevice->SetPixelShader(0);
+	gDevice->SetTexture(0, 0);
 
 	SoundShutdown();
 
 	void RenderShutdown();
 	RenderShutdown();
 
-	rtv->Release();
-	sc->Release();
 	gDevice->Release();
+	gD3d->Release();
 
 	DestroyWindow(gMainWnd);
 

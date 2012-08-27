@@ -38,6 +38,9 @@ void DrawRect(Vector2 p0, Vector2 p1, int sprite, int flags, Colour colour)
 	if (flags & kFlipX) Swap(uv0.x, uv1.x);
 	if (flags & kFlipY) Swap(uv0.y, uv1.y);
 
+	p0 += Vector2(0.5f);
+	p1 += Vector2(0.5f);
+
 	// t0
 
 	v->pos.x	= p0.x * scale.x;
